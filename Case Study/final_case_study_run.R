@@ -8,6 +8,8 @@ library(rgdal)
 library(RColorBrewer)
 library(rasterVis)
 
+setwd("C:\\Users\\mroberts\\OneDrive - Memorial University of Newfoundland\\Marine Institute\\Data\\DFO")
+
 ## Load survey data compiled for Rstrap
 load("Spatial_RV_Data/converted_set_details_2019-04-23.Rdata")
 load("Spatial_RV_Data/converted_length-frequency_data_2019-04-23.Rdata")
@@ -75,6 +77,8 @@ anomaly_sp<-data.frame(long=-just_onespp$long.start, lat=just_onespp$lat.start)
 anomaly_spdf<-SpatialPointsDataFrame(anomaly_sp, data.frame(pa=just_onespp$pos_catch))
 anomaly_spdf2<-SpatialPointsDataFrame(anomaly_sp, data.frame(pa=just_onespp$pos_catch, map=just_onespp$map))
 
+setwd("C:\\Users\\mroberts\\OneDrive - Memorial University of Newfoundland\\Marine Institute\\Data\\Spatial Data")
+
 #import spatial data about the grand bank
 nafo <- readOGR(dsn = "Divisions", layer = "Divisions", verbose=FALSE)
 land <- readOGR(dsn = "ne_10m_bathymetry_L_0", layer = "ne_10m_bathymetry_L_0", verbose=FALSE)
@@ -124,6 +128,8 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 
+setwd("C:\\Users\\mroberts\\OneDrive - Memorial University of Newfoundland\\Marine Institute\\Dissertation Plans\\Chapter 2\\Final Products\\NLFPM\\Models")
+
 #prep the code to run the different models
 dyn.unload("LFPM")
 compile("LFPM.cpp")
@@ -138,7 +144,7 @@ compile("both_species_model.cpp")
 dyn.load("both_species_model")
 
 #load all data
-load("ch2_data_7_26.RData")
+load("C:\\Users\\mroberts\\OneDrive - Memorial University of Newfoundland\\Marine Institute\\Dissertation Plans\\Chapter 2\\Stomach-Content-Simulation\\Noels_parm\\ch2_data_7_26.RData")
 
 #subset the data for species of interest
 ampl_call<-subset(ch2_data$spring_call_dat, name=="american plaice")
@@ -267,9 +273,20 @@ chi<-ampl_rep$chi
 beta<-ampl_rep$beta
 rate<-((K*(newx^beta))/((chi^beta)+(newx^beta)))
 
-curve_df<-data.frame(x=newx, rate=rate)
+
+chi_high=ampl_rep$chi+qnorm(0.975)*ampl_sdrep$sd[25]
+chi_low=ampl_rep$chi-qnorm(0.975)*ampl_sdrep$sd[25]
+
+beta_high=ampl_rep$beta+qnorm(0.975)*ampl_sdrep$sd[24]
+beta_low=ampl_rep$beta-qnorm(0.975)*ampl_sdrep$sd[24]
+
+rate_high<-(newx^beta_high)/(chi_high^beta_high + newx^beta_high)
+rate_low<-(newx^beta_low)/(chi_low^beta_low + newx^beta_low)
+
+curve_df<-data.frame(x=newx, rate=rate, rate_low=rate_low, rate_high=rate_high)
 
 ampl_curve<-ggplot()+
+  geom_ribbon(data=curve_df, aes(x=x, y=rate, ymin=rate_low, ymax=rate_high), alpha=0.1)+
   geom_line(data=curve_df, aes(x=x, y=rate), size=2)+
   geom_point(data=ampl_joined_df2, aes(x=Trawl, y=Raw_call, col="#92c5de"), size=3, alpha=0.7)+
   geom_point(data=ampl_joined_df2, aes(x=Trawl, y=Raw_sto, col="#f4a582"), size=3, alpha=0.7)+
@@ -402,9 +419,19 @@ chi<-cod_rep$chi
 beta<-cod_rep$beta
 rate<-((K*(newx^beta))/((chi^beta)+(newx^beta)))
 
-curve_df<-data.frame(x=newx, rate=rate)
+chi_high=cod_rep$chi+qnorm(0.975)*cod_sdrep$sd[25]
+chi_low=cod_rep$chi-qnorm(0.975)*cod_sdrep$sd[25]
+
+beta_high=cod_rep$beta+qnorm(0.975)*cod_sdrep$sd[24]
+beta_low=cod_rep$beta-qnorm(0.975)*cod_sdrep$sd[24]
+
+rate_high<-(newx^beta_high)/(chi_high^beta_high + newx^beta_high)
+rate_low<-(newx^beta_low)/(chi_low^beta_low + newx^beta_low)
+
+curve_df<-data.frame(x=newx, rate=rate, rate_low=rate_low, rate_high=rate_high)
 
 cod_curve<-ggplot()+
+  geom_ribbon(data=curve_df, aes(x=x, y=rate, ymin=rate_low, ymax=rate_high), alpha=0.1)+
   geom_line(data=curve_df, aes(x=x, y=rate), size=2)+
   geom_point(data=cod_joined_df2, aes(x=Trawl, y=Raw_call), col="#92c5de", size=3, alpha=0.7)+
   geom_point(data=cod_joined_df2, aes(x=Trawl, y=Raw_sto), col="#f4a582", size=3, alpha=0.7)+
@@ -524,7 +551,7 @@ both_curve<-ggplot()+
   geom_segment(aes(x=0.78,y=0.2, xend=0.7, yend=0.3),
                lineend = "round", linejoin = "round",
                size = 1.5, arrow = arrow(length = unit(0.2, "inches")), colour="#035d8a")+
-  ggtitle("All species")+
+  ggtitle("Both species")+
   xlim(0,1)+ylim(0,1)+
   xlab("")+ylab("")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -570,7 +597,7 @@ blankPlot <- ggplot()+geom_blank(aes(1,1)) +
 #extract legend for first plot
 legend <- get_legend(ampl_curve)
 
-jpeg("functional_response_curves_zeroes_7_30.jpeg", width=12, height=10, units = "in", res=400)
+jpeg("functional_response_curves_w_error.jpeg", width=12, height=10, units = "in", res=400)
 gridExtra::grid.arrange(arrangeGrob(ampl_curve+ theme(legend.position="none"),legend, nrow=1), 
                         arrangeGrob(cod_curve, both_curve, nrow=1), nrow=2,
                         bottom = textGrob("Relative Prey Density", vjust = 0, gp = gpar(fontface = "bold", cex = 1.5)),

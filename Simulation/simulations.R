@@ -1,6 +1,9 @@
 
 library(TMB)
 
+setwd("C:\\Users\\mroberts\\OneDrive - Memorial University of Newfoundland\\Marine Institute\\Dissertation Plans\\Chapter 2\\Final Products\\NLFPM\\Models")
+
+
 #prep models so theyll run
 dyn.unload("LFPM")
 compile("LFPM.cpp")
@@ -34,6 +37,7 @@ sel_k_mat<-matrix(NA, nrow=nsim, ncol=1)
 sel_chi_mat<-matrix(NA, nrow=nsim, ncol=1)
 beta_mat<-matrix(NA, nrow=nsim, ncol=1)
 sd_diff<-matrix(NA, nrow=50, ncol=nsim)
+mean_sd<-matrix(NA, nrow=nsim, ncol=2)
 
 #run the simulations
 for(k in 1:nsim){
@@ -42,7 +46,7 @@ for(k in 1:nsim){
   
   #run simulation function
   sample_dat<-simulate_sampling(nyears=25, max_pred_tow=20, min_pred_tow=10,  n_samples = 200, #number of trawl samples
-                                n_pred_samples = 100, pred_mean=10000, RW_var_pred=200,
+                                n_pred_samples = 75, pred_mean=10000, RW_var_pred=200,
                                 predator_sampling_type = "type3", trawl_sampling="binomial", K=1,
                                 chi=0.3, beta=1)
   
@@ -133,7 +137,10 @@ for(k in 1:nsim){
   
   sdrep<-sdreport(obj)
   
-  sd_diff[,k]<-sdrep$sd-sdrep_nosl$sd
+  mean_sd[k,1]<-mean(sdrep$sd[1:25])
+  mean_sd[k,2]<-mean(sdrep_nosl$sd[1:25])
+  
+  sd_diff[,k]<-sdrep$sd[1:25]-sdrep_nosl$sd[1:25]
   
   grad_mat[k,1]<-max(obj$gr())
   
@@ -179,10 +186,11 @@ sim_run_type2<-list(
   grad_mat=grad_mat,
   chi_mat=sel_chi_mat,
   beta_mat=beta_mat,
-  sd_diff=sd_diff
+  sd_diff=sd_diff,
+  mean_sd=mean_sd
 )  
 
-save(sim_run_type2, file="sim_run_type2_w_nosl_mod_7_30.RData")
+save(sim_run_type2, file="sim_run_type2_revisions.RData")
 
 ###############################################
 #######################################
@@ -204,6 +212,7 @@ sel_k_mat<-matrix(NA, nrow=nsim, ncol=1)
 sel_chi_mat<-matrix(NA, nrow=nsim, ncol=1)
 beta_mat<-matrix(NA, nrow=nsim, ncol=1)
 sd_diff<-matrix(NA, nrow=50, ncol=nsim)
+mean_sd<-matrix(NA, nrow=nsim, ncol=2)
 
 #run the simulations
 for(k in 1:nsim){
@@ -212,7 +221,7 @@ for(k in 1:nsim){
   
   #run simulation function
   sample_dat<-simulate_sampling(nyears=25, max_pred_tow=20, min_pred_tow=10,  n_samples = 200, #number of trawl samples
-                                n_pred_samples = 100, pred_mean=10000, RW_var_pred=200,
+                                n_pred_samples = 75, pred_mean=10000, RW_var_pred=200,
                                 predator_sampling_type = "type3", trawl_sampling="binomial", K=1,
                                 chi=0.3, beta=3)
   
@@ -303,7 +312,10 @@ for(k in 1:nsim){
   
   sdrep<-sdreport(obj)
   
-  sd_diff[,k]<-sdrep$sd-sdrep_nosl$sd
+  mean_sd[k,1]<-mean(sdrep$sd[1:25])
+  mean_sd[k,2]<-mean(sdrep_nosl$sd[1:25])
+  
+  sd_diff[,k]<-sdrep$sd[1:25]-sdrep_nosl$sd[1:25]
   
   grad_mat[k,1]<-max(obj$gr())
   
@@ -349,14 +361,15 @@ sim_run_type3<-list(
   grad_mat=grad_mat,
   chi_mat=sel_chi_mat,
   beta_mat=beta_mat,
-  sd_diff=sd_diff
+  sd_diff=sd_diff,
+  mean_sd=mean_sd
 )  
 
-save(sim_run_type3, file="sim_run_type3_w_nosl_mod_7_30.RData")
+save(sim_run_type3, file="sim_run_type3_revisions.RData")
 
 
-load("sim_run_type3_w_nosl_mod_7_30.RData")
-load("sim_run_type2_w_nosl_mod_7_30.RData")
+load("sim_run_type2_revisions.RData")
+load("sim_run_type3_revisions.RData")
 
 nsim<-1000
 
@@ -369,7 +382,7 @@ library(reshape2)
 t2_mse_df<-data.frame(mse_diff=c(type2$true_mse[,3],type2$true_mse[,2],type2$true_mse[,1]), test=c(rep("Trawl", nsim),rep("LFPM", nsim), rep("NLFPM", nsim)))
 t3_mse_df<-data.frame(mse_diff=c(type3$true_mse[,3],type3$true_mse[,2],type3$true_mse[,1]), test=c(rep("Trawl", nsim),rep("LFPM", nsim), rep("NLFPM", nsim)))
 
-jpeg("mse_type2_3_wtrawl_7_30.jpeg", units="in", width=10, height=5, res=400)
+jpeg("mse_revisions.jpeg", units="in", width=10, height=5, res=400)
 p1<-ggplot(t2_mse_df, aes(x=test, y=mse_diff, fill=test))+
   geom_jitter(color="darkgrey", size=0.5)+
   geom_boxplot(alpha=0.5)+  scale_fill_manual(values=c("#035d8a","#f4a582","#c2a5cf"))+
@@ -393,7 +406,7 @@ dev.off()
 
 aic_diff_df<-data.frame(aic_diff=c(type2$aic_diff[,1],type3$aic_diff[,1]), test=c(rep("Type II", nsim), rep("Type III", nsim)))
 
-jpeg("aic_diff_type2_3_7_30.jpeg", units="in", width=5, height=5, res=400)
+jpeg("aic_revisions.jpeg", units="in", width=5, height=5, res=400)
 ggplot(aic_diff_df, aes(x=test, y=aic_diff, fill=test))+
   geom_jitter(color="darkgrey", size=0.5)+
   ylim(-1700, 10)+
@@ -412,7 +425,7 @@ t2_bias_df<-data.frame(bias=c(type2$iye_bias[,1],type2$iye_bias[,2],type2$iye_bi
 t3_bias_df<-data.frame(bias=c(type3$iye_bias[,1],type3$iye_bias[,2], type3$iye_bias[,3]), test=c(rep("NLFPM", nsim), rep("LFPM", nsim), rep("Trawl", nsim)))
 
 
-jpeg("bias_type2_3_wtrawl_7_30.jpeg", units="in", width=10, height=5, res=400)
+jpeg("bias_revisions.jpeg", units="in", width=10, height=5, res=400)
 p1<-ggplot(t2_bias_df, aes(x=test, y=bias, fill=test))+
   geom_jitter(color="darkgrey", size=0.5)+
   geom_boxplot(alpha=0.5)+  scale_fill_manual(values=c("#035d8a","#f4a582","#c2a5cf"))+
@@ -437,7 +450,7 @@ dev.off()
 
 
 
-jpeg("parm_estimates_thicklines_7_30.jpeg", units="in", width=12, height=8, res=400)
+jpeg("parm_estimates_revisions.jpeg", units="in", width=12, height=8, res=400)
 chi_mat<-data.frame(chi=type2$chi_mat, parm=rep("chi",nsim))
 p1<-ggplot(chi_mat, aes(x=parm, y=chi, fill=parm))+
   geom_jitter(color="darkgrey", size=0.5)+
@@ -594,15 +607,15 @@ gridExtra::grid.arrange( blankPlot, blankPlot, legend,
 dev.off()
 
 
-sd_diff_df<-data.frame(sd_diff=c(c(type2$sd_diff),(type3$sd_diff)), test=c(rep("Type II", nsim*50), rep("Type III", nsim*50)))
+sd_diff_df<-data.frame(sd_diff=c(c(type2$sd_diff/type2$mean_sd[,2])*100,c(type3$sd_diff/type3$mean_sd[,2])*100), test=c(rep("Type II", nsim*50), rep("Type III", nsim*50)))
 
-jpeg("sd_diff_7_30.jpeg", units="in", width=5, height=5, res=400)
+jpeg("sd_diff_revisions.jpeg", units="in", width=5, height=5, res=400)
 ggplot(sd_diff_df, aes(x=test, y=sd_diff, fill=test))+
   geom_jitter(color="darkgrey", size=0.5)+
   #ylim(-1700, 10)+
   geom_boxplot(alpha=0.5)+  scale_fill_manual(values=c("#92c5de","#f4a582"))+
   geom_hline(yintercept=0, linetype="dashed", colour="#ca0020", size=1.3)+
-  xlab("Operating Model")+ylab("Standard Deviation Difference")+
+  xlab("Operating Model")+ylab("Standard Deviation Percent Difference")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"), legend.position = "none",
         axis.text= element_text(size=14), axis.title=element_text(size=14,face="bold"))

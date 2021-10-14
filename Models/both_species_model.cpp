@@ -70,6 +70,8 @@ Type objective_function<Type>::operator() ()
   REPORT(new_mu);
   
   ADREPORT(iye);
+  ADREPORT(beta);
+  ADREPORT(chi);
   
   return nll;
 }
